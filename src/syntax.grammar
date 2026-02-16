@@ -1,118 +1,222 @@
-@top AbcMusic { AbcScores  }
-
-@skip { LineComment | Emptyline | eol }
-
-@precedence { AbcBody @left  }
-
-
-AbcScores {
-  AbcScore* 
+//ABC file with lines
+@top abcFile {
+	abcLine*
+}
+abcLine {
+	LineFieldInstruction | LineFieldString | LineLyric | LineFieldUnknown | LineMusic | LineComment | LinePseudoComment
 }
 
-AbcScore {
-  ( Instruction Informations) * 
-  ScoreReference 
-  AbcHeaderElement*
-  Key Informations
-  AbcBody
+//Instruction field
+LineFieldInstruction {
+	LineFieldInstructionStart
+	lineFieldInstructionEnd
+	(
+		LineFieldContinue
+		lineFieldInstructionEnd
+	)*
+}
+lineFieldInstructionEnd {
+	LineFieldInstructionValue?
+	eolComment?
+	eol
+}
+LineFieldInstructionValue {
+	lineFieldValue
+}
+inlineFieldInstruction {
+	InlineFieldInstructionStart InlineFieldInstructionValue? InlineFieldEnd
+}
+InlineFieldInstructionValue {
+	inlineFieldValue
 }
 
-ScoreReference {
-  ReferenceNumber Numbers 
+//String field
+LineFieldString {
+	LineFieldStringStart
+	lineFieldStringEnd
+	(
+		LineFieldContinue
+		lineFieldStringEnd
+	)*
+}
+lineFieldStringEnd {
+	LineFieldStringValue?
+	eolComment?
+	eol
+}
+LineFieldStringValue {
+	lineFieldValue
+}
+inlineFieldString {
+	InlineFieldStringStart InlineFieldStringValue? InlineFieldEnd
+}
+InlineFieldStringValue {
+	inlineFieldValue
 }
 
-AbcHeaderElement  {
-  Composer Informations |
-  Length Informations |
-  Meter Informations |
-  Notes Informations |
-  Origin Informations |
-  Part Informations |
-  Tempo Informations |
-  Source Informations |
-  Title Informations |
-  Redefine Informations |
-  Transcription Numbers |
-  Book Informations |
-  Discography Informations|
-  File Informations|
-  Title Informations |
-  Rythm Informations
+//Lyric field
+LineLyric {
+	LineFieldLyricStart 
+	lineFieldLyricEnd
+	(
+		LineFieldContinue
+		lineFieldLyricEnd
+	)*
+}
+lineFieldLyricEnd {
+	lyricSeparator+
+	(LyricSyllable lyricSeparator+)*
+	LyricSyllable?
+	eolComment?
+	eol
+}
+LyricSyllable {
+	lyricSyllableTok+
+}
+lyricSeparator {
+	LyricSkip | LyricBreak | LyricBar | space
 }
 
-
-AbcBody {
-  AbcBodyElement*
-  SongsWords Informations
+//Unknown
+LineFieldUnknown {
+	LineFieldUnknownStart
+	lineFieldUnknownEnd
+	(
+		LineFieldContinue
+		lineFieldUnknownEnd
+	)*
+}
+lineFieldUnknownEnd {
+	LineFieldUnknownValue?
+	eolComment?
+	eol
+}
+LineFieldUnknownValue {
+	lineFieldValue
+}
+inlineFieldUnknown {
+	InlineFieldUnknownStart InlineFieldUnknownValue? InlineFieldEnd
+}
+InlineFieldUnknownValue {
+	inlineFieldValue
 }
 
-Chords {
-  ChordsStart Informations ChordsEnd
+//Music line
+LineMusic {
+	musicOther*
+	pair*
+	tail?
+	eolComment?
+	eol
+}
+pair {
+	MusicOdd  musicOther*
+	MusicEven musicOther*
+}
+tail {
+	MusicOdd musicOther*
 }
 
-LineNotes {
-  Bar |
-  TermRepeat |
-  NoteRythm |
-  AccidentalAndOctaves 
+//Odd color music tokens
+MusicOdd {
+	dotOdd  | restOdd  | chordOdd
+}
+//Even color music tokens
+MusicEven {
+	dotEven | restEven | chordEven
+}
+//Other tokens with their own colors
+musicOther {
+	AccomChord | BarSep | BrokenRythm | Decoration | GraceNote | Slur | Symbol | Tie | Tuplets |
+	inlineFieldInstruction | inlineFieldString | inlineFieldUnknown | Gap | NextLine
 }
 
-OtherLines {
-  LineWords Informations |
-  Chords |
-  Voice Informations
+//Musical dot in odd/even colors e.g. ^a'3/2
+dotOdd  {dot}
+dotEven {dot}
+dot {
+	accidental? note octave? length?
 }
 
-AbcBodyElement {
-  LineNotes |
-  OtherLines
+//Musical chord in odd/even colors e.g. [^a_bc']/4
+chordOdd  {chord}
+chordEven {chord}
+chord {
+	bracketOpen (accidental? note octave?)* bracketClose length?
 }
 
+//Rest and bar rest in odd/even colors e.g. Z/
+restOdd  {rest}
+restEven {rest}
+rest {
+	resttype length?
+}
+
+//Comments
+LineComment       {LineCommentStart       LineCommentValue      }
+LinePseudoComment {LinePseudoCommentStart LinePseudoCommentValue}
+eolComment        {EolCommentStart        EolCommentValue       }
+LineCommentValue {
+	noNewLine* eol
+}
+LinePseudoCommentValue {
+	noNewLine* eol
+}
+EolCommentValue {
+	noNewLine*
+}
+
+//Implemented in token.js
 @external tokens externalHandler from "./token" {
-  Emptyline ,
-  Instruction ,
-  LineComment
+	LineCommentStart
+	LinePseudoCommentStart
+	LineFieldInstructionStart
+	LineFieldStringStart
+	LineFieldLyricStart
+	LineFieldUnknownStart
+	LineFieldContinue
+	InlineFieldInstructionStart,
+	InlineFieldStringStart,
+	InlineFieldUnknownStart,
+	BarSep
 }
 
-//
 @tokens {
+	//Comments
+	EolCommentStart {"%"}
+	
+	//Fields
+	lineFieldValue    { ![%\n]+ }
+	inlineFieldValue  { ![\]]+ }
+	InlineFieldEnd    {bracketClose}
+	LyricSkip         {"*"  }
+	LyricBreak        {$[\-]}
+	LyricBar          {"|"  }
+	lyricSyllableTok  {![ \-|*\\%\n] | ("\\" ![%]) }
+	space             {" "}
+	
+	//Music Odd/Even
+	accidental  {"=" | "^" | "_" | "^^" | "__"}
+	note        {$[A-Ga-g]}
+	octave      {$[,']+}
+	resttype    {$[xXyzZ]}
+	length      {$[0-9]+ | ($[0-9]* "/" $[0-9]*) | ($[0-9]* "/" "/"+)}
+	
+	//Music Other
+	AccomChord  {"\"" !["]* "\""}
+	BrokenRythm {"<" | ">"}
+	Decoration  {$[.~HLMOPSTuvtJ]}
+	Symbol      {"!" ![!]* "!"}
+	Tuplets     {"("$[1-9] (":"$[1-9])? (":"$[1-9])?}
+	Slur        {"(" | ")"}
+	Tie         {"-"}
+	GraceNote   {"{" | "}"}
+	Gap         {" " | "\t" | "`"}
+	NextLine    {("\\" " "* "\n") | "$"}
 
-  Composer { 'C:'  }
-  Key { 'K:' }
-  Length { 'L:' }
-  Meter { 'M:' }
-  Notes { 'N:' }
-  Origin { 'O:' }
-  Part { 'P:' }
-  Tempo { 'Q:' }
-  Rythm { 'R:'  }
-  Source { 'S:' }
-  Book { 'B:' }
-  Discography { 'D:' }
-  File { 'F:' }
-  Title { 'T:'  }
-  Redefine { 'U:' }
-  ReferenceNumber { 'X:'}
-  Numbers  { $[ ]* (@digit)+ }
-  Transcription { 'Z:' }
-  Voice { 'V:' }
-  LineWords { 'w:'  }
-  SongsWords { 'W:'  }
-  AccidentalAndOctaves  { "'^'|'='|'_'|','"}
-  Bar  { '|' $[|:]? }
-  TermRepeat { ':' '|' $[|]?}
-  ChordsStart { '[' }
-  ChordsEnd { ']' }
-  NoteRythm { $[ ~(a-gzA-GZ)] ($[,']?)* $[0-9]* }
-  Informations { $[ '-',.?!/;(a-z-A-Z0-9)]+ } 
-
-
-  // LineComment { '%' $[_]*  (eol | eof)}
-  // Instructions { '%%' Informations}
-
-  eol { '\n'}
-
-
+	//Primitives
+	bracketOpen   {"["}
+	bracketClose  {"]"}
+	noNewLine     {![\n]}
+	eol           {"\n"} //| @eof}
 }
-
-@detectDelim

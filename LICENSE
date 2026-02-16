@@ -1,6 +1,8 @@
 MIT License
 
-Copyright (C) 2021 by Marijn Haverbeke <marijnh@gmail.com> and others
+Copyright (C) 2026 by Rick van der Sluijs
+Based on AbcMusicLezer by Jean-Yves Mengant
+Based on codemirror/lang-example Copyright (C) 2021 by Marijn Haverbeke <marijnh@gmail.com> and others
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

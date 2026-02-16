@@ -39,10 +39,10 @@ export function printTree(
           output += (!isTop ? "\n" : "") + prefixes.join("")
           const hasNextSibling = cursor.nextSibling() && cursor.prevSibling()
           if (hasNextSibling) {
-            output += " ├─ "
-            prefixes.push(" │  ")
+            output += " +- "
+            prefixes.push(" �  ")
           } else {
-            output += " └─ "
+            output += " +- "
             prefixes.push("    ")
           }
         }
