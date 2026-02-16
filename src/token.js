@@ -151,7 +151,7 @@ export const externalHandler = new ExternalTokenizer((Input, Stack) => {
 	//Detect inline field start
 	if (IsChar(Input.next, '[')) {
 		Input.advance();
-		if (IsField(Input.next, false)) {
+		if (IsField(Input.next, true)) {
 			Input.advance();
 			if (IsColon(Input.next)) {
 				let FieldCharCode = Input.peek(-1);
@@ -164,7 +164,7 @@ export const externalHandler = new ExternalTokenizer((Input, Stack) => {
 	else if (!IsBarSep(Input.next)) {
 		//If there was a newline or begin of file before this potential token
 		if (IsLineBreak(Input.peek(-1))) {
-			if (!IsField(Input.next, true)) {
+			if (!IsField(Input.next, false)) {
 				//Skip tabs and spaces at the beginning of the line
 				while (IsInvisible(Input.next))
 					Input.advance();
